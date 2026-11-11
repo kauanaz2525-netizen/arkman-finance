@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARKMAN FINANCE</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#090909;--panel:#151515;--panel2:#1d1d1d;--red:#c51f32;--red2:#8f1423;--silver:#c7c7c7;--muted:#929292;--line:#303030;--green:#42c887}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top right,#291016 0,#090909 38%);color:#f5f5f5;font:15px Arial,sans-serif;min-height:100vh}
+button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:9px;padding:11px 16px;background:var(--red);color:white;font-weight:700}button:hover{background:#e12b40}button.secondary{background:#333;color:#eee;border:1px solid #444}button.danger{background:#70202a}
+.wrap{max-width:1150px;margin:auto;padding:24px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}.brand{display:flex;align-items:center;gap:13px}.crest{width:48px;height:48px;border:2px solid var(--red);border-radius:12px;display:grid;place-items:center;color:#fff;font-size:25px;font-weight:900;background:#180b0e}.brand h1{font-size:20px;letter-spacing:2px;margin:0}.brand small{color:var(--silver);letter-spacing:3px}.panel{background:linear-gradient(145deg,#191919,#101010);border:1px solid var(--line);border-radius:15px;padding:20px;box-shadow:0 12px 30px #0005}.auth{max-width:430px;margin:8vh auto}.auth h2,.section-title{margin:0 0 8px}.muted{color:var(--muted)}label{display:block;color:var(--silver);font-size:13px;margin:14px 0 6px}input,select{width:100%;padding:12px;border-radius:8px;background:#0b0b0b;color:white;border:1px solid #383838;outline:none}input:focus,select:focus{border-color:var(--red)}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}.stat strong{font-size:25px;display:block;margin-top:8px}.stat span{color:var(--muted);font-size:13px}.layout{display:grid;grid-template-columns:350px 1fr;gap:16px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.form-grid .full{grid-column:1/-1}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.tabs button{background:#252525;border:1px solid #3b3b3b}.tabs button.active{background:var(--red);border-color:var(--red)}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:560px}th,td{text-align:left;padding:12px;border-bottom:1px solid #303030;font-size:13px}th{color:var(--silver);font-weight:700}.positive{color:var(--green)}.negative{color:#ff6474}.notice{padding:11px;border-radius:8px;background:#291116;border:1px solid #65202c;color:#ffd9de;margin-top:12px;font-size:13px}.hidden{display:none!important}.right{display:flex;gap:8px;align-items:center}.user{font-size:13px;color:var(--silver)}#message{min-height:18px;color:#ff9aa5;font-size:13px;margin-top:10px}.foot{color:#777;text-align:center;font-size:12px;margin:25px 0}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.wrap{padding:14px}.top{align-items:flex-start}.brand h1{font-size:17px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><div class="crest">A</div><div><h1>ARKMAN FINANCE</h1><small>UNIÃO • RESPEITO • FORÇA</small></div></div>
+    <div class="right"><span class="user" id="userLabel"></span><button class="secondary hidden" id="logoutBtn">Sair</button></div>
+  </header>
+
+  <section class="panel auth" id="authPanel">
+    <h2>Acesso à família</h2><p class="muted">Entre com sua conta individual para acessar o financeiro.</p>
+    <label for="email">E-mail</label><input id="email" type="email" autocomplete="email" placeholder="seu@gmail.com">
+    <label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" placeholder="Sua senha">
+    <div class="right" style="margin-top:18px"><button id="loginBtn">Entrar</button><button class="secondary" id="signupBtn">Criar conta</button></div>
+    <div id="message"></div>
+    <div class="notice">O cadastro cria uma conta individual. O acesso aos dados depende das permissões configuradas no banco.</div>
+  </section>
+
+  <main id="app" class="hidden">
+    <div class="grid">
+      <div class="panel stat"><span>Saldo atual</span><strong id="balance">R$ 0,00</strong></div>
+      <div class="panel stat"><span>Total de entradas</span><strong class="positive" id="income">R$ 0,00</strong></div>
+      <div class="panel stat"><span>Total de saídas</span><strong class="negative" id="expense">R$ 0,00</strong></div>
+      <div class="panel stat"><span>Movimentações</span><strong id="count">0</strong></div>
+    </div>
+    <div class="tabs">
+      <button class="active" data-tab="movements">Movimentações</button>
+      <button data-tab="payments">Pagamentos</button>
+      <button data-tab="history">Histórico</button>
+    </div>
+    <section id="movements" class="tab-content">
+      <div class="layout">
+        <div class="panel">
+          <h2 class="section-title">Nova movimentação</h2>
+          <div class="form-grid">
+            <div><label>Tipo</label><select id="type"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div>
+            <div><label>Valor (R$)</label><input id="value" type="number" min="0.01" step="0.01" placeholder="0,00"></div>
+            <div class="full"><label>Categoria</label><input id="category" placeholder="Ex.: Farm, venda, manutenção"></div>
+            <div class="full"><label>Descrição</label><input id="description" placeholder="Detalhes (opcional)"></div>
+            <div class="full"><button id="saveMovement" style="width:100%">Registrar movimentação</button></div>
+          </div>
+          <div id="movementMessage" class="muted" style="margin-top:10px;font-size:13px"></div>
+        </div>
+        <div class="panel">
+          <h2 class="section-title">Movimentações recentes</h2>
+          <div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Data</th></tr></thead><tbody id="movementRows"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+    <section id="payments" class="tab-content hidden">
+      <div class="panel">
+        <h2 class="section-title">Pagamentos dos membros</h2>
+        <p class="muted">Cadastre primeiro os membros na tabela <b>membros</b> do Supabase. Depois os pagamentos poderão ser associados a eles.</p>
+        <div class="form-grid">
+          <div><label>Membro</label><select id="memberSelect"><option value="">Carregando membros...</option></select></div>
+          <div><label>Valor (R$)</label><input id="paymentValue" type="number" min="0" step="0.01" placeholder="0,00"></div>
+          <div><label>Status</label><select id="paymentStatus"><option value="pago">Pago</option><option value="pendente">Pendente</option></select></div>
+          <div style="align-self:end"><button id="savePayment" style="width:100%">Registrar pagamento</button></div>
+        </div>
+        <div class="table-wrap" style="margin-top:18px"><table><thead><tr><th>Membro</th><th>Valor</th><th>Status</th><th>Data</th></tr></thead><tbody id="paymentRows"></tbody></table></div>
+        <div id="paymentMessage" class="muted" style="margin-top:10px;font-size:13px"></div>
+      </div>
+    </section>
+    <section id="history" class="tab-content hidden">
+      <div class="panel"><h2 class="section-title">Histórico de alterações</h2><div class="table-wrap"><table><thead><tr><th>Ação</th><th>Tabela</th><th>Data</th><th>Usuário</th></tr></thead><tbody id="historyRows"></tbody></table></div></div>
+    </section>
+  </main>
+  <div class="foot">ARKMAN FINANCE • Controle interno da Família ARKAMAN</div>
+</div>
+<script>
+/* COLE AQUI o Project URL e a Publishable key do seu projeto Supabase. */
+const SUPABASE_URL = "Project URL";
+const SUPABASE_KEY = "Publishable key";
+const configured = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("COLE_AQUI") && !SUPABASE_KEY.includes("COLE_AQUI");
+const db = configured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const $ = id => document.getElementById(id);
+const money = n => Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+function msg(id,text){$(id).textContent=text}
+function showApp(session){$("authPanel").classList.toggle("hidden",!!session);$("app").classList.toggle("hidden",!session);$("logoutBtn").classList.toggle("hidden",!session);$("userLabel").textContent=session?.user?.email||"";if(session)loadAll()}
+async function loadAll(){await Promise.all([loadMovements(),loadMembers(),loadPayments(),loadHistory()])}
+async function loadMovements(){
+ const {data,error}=await db.from("movimentacoes").select("*").order("criado_em",{ascending:false});
+ if(error){msg("movementMessage","Erro ao carregar: "+error.message);return}
+ const rows=data||[];let inc=0,out=0;rows.forEach(r=>r.tipo==="entrada"?inc+=Number(r.valor):out+=Number(r.valor));
+ $("income").textContent=money(inc);$("expense").textContent=money(out);$("balance").textContent=money(inc-out);$("count").textContent=rows.length;
+ $("movementRows").innerHTML=rows.map(r=>`<tr><td>${r.tipo==="entrada"?"Entrada":"Saída"}</td><td>${esc(r.categoria)}</td><td>${esc(r.descricao||"—")}</td><td class="${r.tipo==="entrada"?"positive":"negative"}">${money(r.valor)}</td><td>${new Date(r.criado_em).toLocaleString("pt-BR")}</td></tr>`).join("")||'<tr><td colspan="5">Nenhuma movimentação cadastrada.</td></tr>';
+}
+async function loadMembers(){
+ const {data,error}=await db.from("membros").select("id,nome").order("nome");
+ $("memberSelect").innerHTML='<option value="">Selecione um membro</option>'+(data||[]).map(m=>`<option value="${m.id}">${esc(m.nome)}</option>`).join("");
+ if(error)msg("paymentMessage","Erro ao carregar membros: "+error.message);
+}
+async function loadPayments(){
+ const {data,error}=await db.from("pagamentos").select("id,membro_id,valor,status,criado_em,membros(nome)").order("criado_em",{ascending:false});
+ if(error){msg("paymentMessage","Erro ao carregar pagamentos: "+error.message);return}
+ $("paymentRows").innerHTML=(data||[]).map(p=>`<tr><td>${esc(p.membros?.nome||"Membro")}</td><td>${money(p.valor)}</td><td>${p.status}</td><td>${new Date(p.criado_em).toLocaleString("pt-BR")}</td></tr>`).join("")||'<tr><td colspan="4">Nenhum pagamento cadastrado.</td></tr>';
+}
+async function loadHistory(){
+ const {data,error}=await db.from("historico").select("acao,tabela,data_alteracao,usuario_id").order("data_alteracao",{ascending:false}).limit(100);
+ $("historyRows").innerHTML=error?'<tr><td colspan="4">Não foi possível carregar o histórico.</td></tr>':(data||[]).map(h=>`<tr><td>${esc(h.acao)}</td><td>${esc(h.tabela)}</td><td>${new Date(h.data_alteracao).toLocaleString("pt-BR")}</td><td>${esc(h.usuario_id||"—")}</td></tr>`).join("")||'<tr><td colspan="4">Ainda não há alterações registradas.</td></tr>';
+}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+$("loginBtn").onclick=async()=>{if(!db){msg("message","Configure primeiro o Project URL e a Publishable key no código.");return}const {error}=await db.auth.signInWithPassword({email:$("email").value,password:$("password").value});msg("message",error?.message||"")}
+$("signupBtn").onclick=async()=>{if(!db){msg("message","Configure primeiro o Project URL e a Publishable key no código.");return}const {error}=await db.auth.signUp({email:$("email").value,password:$("password").value,options:{data:{nome:$("email").value.split("@")[0]}}});msg("message",error?error.message:"Conta criada. Se a confirmação de e-mail estiver ativa, confirme sua caixa de entrada.")}
+$("logoutBtn").onclick=async()=>{await db.auth.signOut();showApp(null)}
+$("saveMovement").onclick=async()=>{const valor=Number($("value").value),categoria=$("category").value.trim();if(!valor||valor<=0||!categoria){msg("movementMessage","Informe um valor válido e uma categoria.");return}const {error}=await db.from("movimentacoes").insert({tipo:$("type").value,categoria,descricao:$("description").value.trim(),valor});msg("movementMessage",error?error.message:"Movimentação registrada.");if(!error){$("value").value="";$("category").value="";$("description").value="";await loadMovements();await loadHistory()}}
+$("savePayment").onclick=async()=>{const membro_id=$("memberSelect").value,valor=Number($("paymentValue").value);if(!membro_id||!valor||valor<0){msg("paymentMessage","Selecione um membro e informe o valor.");return}const {error}=await db.from("pagamentos").insert({membro_id,valor,status:$("paymentStatus").value});msg("paymentMessage",error?error.message:"Pagamento registrado.");if(!error){$("paymentValue").value="";await loadPayments();await loadHistory()}}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".tab-content").forEach(x=>x.classList.toggle("hidden",x.id!==b.dataset.tab))});
+if(!configured){msg("message","Falta inserir o Project URL e a Publishable key no início do código.");}
+else{db.auth.getSession().then(({data})=>showApp(data.session));db.auth.onAuthStateChange((_event,session)=>showApp(session))}
+</script>
+</body>
+</html>
